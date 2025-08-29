@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>六年八八班课堂积分乐园</title>
+    <title>六年八班课堂积分乐园</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Microsoft YaHei', sans-serif; background-color: #f0f8ff; color: #333; }
@@ -26,7 +26,13 @@
         .daily-score div { width: 20%; text-align: center; }
         .total { font-weight: bold; color: #4a90e2; }
         .score-input { width: 60px; padding: 5px; margin: 0 auto; border: 2px solid #ddd; border-radius: 5px; text-align: center; font-size: 1em; }
-        .score-input:focus { border-color: #4a90e2; outline: none; }
+        .score-input:focus { 
+            border-color: #4a90e2; 
+            outline: none; 
+            background-color: #f0f8ff;
+            transform: scale(1.05);
+            transition: all 0.2s;
+        }
         .actions { text-align: center; margin: 20px 0; }
         .actions button { background-color: #f0ad4e; color: white; border: none; padding: 10px 20px; margin: 0 10px; border-radius: 5px; cursor: pointer; font-size: 1em; }
         .back-btn { display: block; width: 120px; margin: 20px auto; background-color: #6c757d; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; text-align: center; }
@@ -45,6 +51,8 @@
         .backup-tools { text-align: center; margin: 20px 0; font-size: 1.1em; }
         .backup-tools button { background-color: #5cb85c; color: white; border: none; padding: 10px 20px; margin: 0 10px; border-radius: 5px; cursor: pointer; }
         .save-status { text-align: center; color: #4a9; font-size: 0.9em; margin: 10px 0; }
+        .input-tip { text-align: center; color: #4a9; font-size: 0.9em; margin: 10px 0; }
+        tr:focus-within { background-color: #f0f8ff; }
     </style>
 </head>
 <body>
@@ -68,10 +76,14 @@
             <!-- 保存状态 -->
             <p class="save-status" id="saveStatus">📌 数据自动保存中...</p>
 
+            <!-- 使用提示 -->
+            <p class="input-tip">💡 提示：输入分数后按 Enter，自动保存并跳到下一个输入框</p>
+
             <!-- 导出/导入按钮 -->
             <div class="backup-tools">
-                <button onclick="exportData()">💾 导出数据（保存到电脑）</button>
-                <button onclick="importData()">📂 导入数据（恢复备份）</button>
+                <button onclick="exportData()">💾 导出数据</button>
+                <button onclick="importData()">📂 导入数据</button>
+                <button onclick="reloadData()" style="background-color: #9b59b6;">🔄 强制刷新数据</button>
             </div>
 
             <div class="week-selector">
@@ -141,7 +153,7 @@
         // ================== 🔐 密码管理 ==================
         let ENCODED_PASSWORD = 'MTIzNDU2'; // '123456'
 
-        // ================== 学生数据 ==================
+        // ================== 初始学生名单 ==================
         const initialStudents = [
             { id: 1, name: "卢淳雅", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
             { id: 2, name: "黄筱晴", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 70 },
@@ -190,43 +202,6 @@
         let students = [];
         let isTeacherLoggedIn = false;
 
-        // ================== 页面加载 ==================
-        window.onload = function() {
-            const savedPassword = localStorage.getItem('class8Password');
-            if (savedPassword) {
-                ENCODED_PASSWORD = savedPassword;
-            }
-
-            const saved = localStorage.getItem('class8Students');
-            if (saved) {
-                try {
-                    students = JSON.parse(saved);
-                    console.log('✅ 从 localStorage 加载数据成功', students.length + '人');
-                } catch (e) {
-                    console.error('❌ 数据解析失败，使用默认名单', e);
-                    students = JSON.parse(JSON.stringify(initialStudents));
-                }
-            } else {
-                console.log('📁 无保存数据，使用默认名单');
-                students = JSON.parse(JSON.stringify(initialStudents));
-            }
-
-            if (!Array.isArray(students) || students.length === 0) {
-                students = JSON.parse(JSON.stringify(initialStudents));
-            }
-
-            isTeacherLoggedIn = false;
-            generateTeacherTable();
-            updateAllTotals();
-
-            // 显示上次保存时间
-            const lastSave = localStorage.getItem('class8LastSave');
-            const statusEl = document.getElementById('saveStatus');
-            if (lastSave) {
-                statusEl.textContent = `📌 最后保存于 ${new Date(parseInt(lastSave)).toLocaleString()}`;
-            }
-        };
-
         // ================== 工具函数 ==================
         function getRealPassword() {
             try {
@@ -249,14 +224,10 @@
                 localStorage.setItem('class8Students', dataToSave);
                 localStorage.setItem('class8LastSave', Date.now().toString());
                 document.getElementById('saveStatus').textContent = `📌 已自动保存于 ${new Date().toLocaleTimeString()}`;
-                console.log('✅ 数据已保存');
+                console.log('✅ 数据已保存：', students.length + '人');
             } catch (e) {
                 console.error('❌ 保存失败：', e);
-                if (e.name === 'QuotaExceededError') {
-                    alert('❌ 存储空间不足！建议导出数据后清空');
-                } else {
-                    alert('❌ 数据保存失败！请检查浏览器是否为无痕模式');
-                }
+                alert('❌ 数据保存失败！请检查是否使用无痕模式，或浏览器设置阻止了存储。');
             }
         }
 
@@ -323,26 +294,62 @@
             input.click();
         }
 
+        function reloadData() {
+            const saved = localStorage.getItem('class8Students');
+            if (saved) {
+                try {
+                    students = JSON.parse(saved);
+                    generateTeacherTable();
+                    updateAllTotals();
+                    alert('✅ 已从存储中重新加载最新数据');
+                } catch (e) {
+                    alert('❌ 数据损坏，已恢复默认名单');
+                    students = JSON.parse(JSON.stringify(initialStudents));
+                    generateTeacherTable();
+                }
+            } else {
+                alert('📭 无保存数据，使用默认名单');
+                students = JSON.parse(JSON.stringify(initialStudents));
+                generateTeacherTable();
+            }
+        }
+
         // ================== 登录系统 ==================
         function loginAsTeacher() {
             const pwd = prompt('请输入老师密码 🔐');
             if (pwd === null) return;
-            if (pwd === getRealPassword()) {
-                isTeacherLoggedIn = true;
-                sessionStorage.setItem('teacherLoggedIn', 'true');
-                showTeacherView();
-            } else {
-                alert('密码错误！请重新输入。');
+            if (pwd !== getRealPassword()) {
+                alert('密码错误！');
+                return;
             }
-        }
 
-        function showTeacherView() {
-            const loggedIn = sessionStorage.getItem('teacherLoggedIn') === 'true';
-            if (!loggedIn) { loginAsTeacher(); return; }
+            const saved = localStorage.getItem('class8Students');
+            if (saved) {
+                try {
+                    students = JSON.parse(saved);
+                    console.log('🔁 已从 localStorage 重新加载数据');
+                } catch (e) {
+                    console.error('❌ 数据解析失败，使用默认名单', e);
+                    students = JSON.parse(JSON.stringify(initialStudents));
+                }
+            } else {
+                console.log('⚠️ 无历史数据，使用默认名单');
+                students = JSON.parse(JSON.stringify(initialStudents));
+            }
+
+            if (!Array.isArray(students) || students.length === 0) {
+                students = JSON.parse(JSON.stringify(initialStudents));
+            }
+
+            generateTeacherTable();
+            updateAllTotals();
+
             document.getElementById('homeButtons').style.display = 'none';
             document.querySelector('.header').style.display = 'none';
             document.querySelector('.class-photo').style.display = 'none';
             document.getElementById('teacherView').style.display = 'block';
+
+            sessionStorage.setItem('teacherLoggedIn', 'true');
         }
 
         function showStudentView() {
@@ -398,20 +405,15 @@
                         </div>
                     </td>
                     <td><input type="number" class="score-input" id="input-${left.id}-mon" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'mon',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'mon',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${left.id}, 'mon')"></td>
                     <td><input type="number" class="score-input" id="input-${left.id}-tue" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'tue',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'tue',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${left.id}, 'tue')"></td>
                     <td><input type="number" class="score-input" id="input-${left.id}-wed" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'wed',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'wed',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${left.id}, 'wed')"></td>
                     <td><input type="number" class="score-input" id="input-${left.id}-thu" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'thu',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'thu',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${left.id}, 'thu')"></td>
                     <td><input type="number" class="score-input" id="input-${left.id}-fri" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'fri',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'fri',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${left.id}, 'fri')"></td>
                     <td class="total" id="total-${left.id}">${left.total}</td>
                     
                     <td>${right.id}</td>
@@ -425,24 +427,39 @@
                         </div>
                     </td>
                     <td><input type="number" class="score-input" id="input-${right.id}-mon" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'mon',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'mon',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${right.id}, 'mon')"></td>
                     <td><input type="number" class="score-input" id="input-${right.id}-tue" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'tue',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'tue',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${right.id}, 'tue')"></td>
                     <td><input type="number" class="score-input" id="input-${right.id}-wed" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'wed',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'wed',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${right.id}, 'wed')"></td>
                     <td><input type="number" class="score-input" id="input-${right.id}-thu" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'thu',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'thu',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${right.id}, 'thu')"></td>
                     <td><input type="number" class="score-input" id="input-${right.id}-fri" placeholder="0"
-                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'fri',parseInt(this.value)||0);this.value='';}"
-                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'fri',parseInt(this.value)||0);this.value='';}"></td>
+                        onkeydown="handleScoreInput(event, ${right.id}, 'fri')"></td>
                     <td class="total" id="total-${right.id}">${right.total}</td>
                 </tr>`;
             }
             tbody.innerHTML = html;
+        }
+
+        // ✅ 统一处理输入事件
+        function handleScoreInput(event, id, day) {
+            if (event.key !== 'Enter') return;
+
+            const input = event.target;
+            const points = parseInt(input.value) || 0;
+            if (points === 0) return;
+
+            updateScore(id, day, points);
+            input.value = ''; // 可选：清空表示已录入
+
+            // 自动跳到下一个输入框
+            const allInputs = Array.from(document.querySelectorAll('.score-input'));
+            const currentIndex = allInputs.indexOf(input);
+            const nextInput = allInputs[currentIndex + 1];
+            if (nextInput) {
+                nextInput.focus();
+            }
         }
 
         function updateScore(id, day, points) {
@@ -452,6 +469,7 @@
                 student.scores[day] += points;
                 student.total = Object.values(student.scores).reduce((a,b)=>a+b, 0);
                 document.getElementById(`total-${id}`).textContent = student.total;
+
                 const row = document.querySelector(`#teacherTableBody tr:nth-child(${Math.ceil(id/2)})`);
                 if (row) {
                     const days = ['mon','tue','wed','thu','fri'];
@@ -462,7 +480,8 @@
                         divs[idx].textContent = `${dayNames[idx]}:${student.scores[day]}`;
                     }
                 }
-                saveData(); // ✅ 每次修改都保存
+
+                saveData();
             }
         }
 
@@ -474,6 +493,7 @@
             });
         }
 
+        // ================== 学生查询 ==================
         function checkStudent() {
             const inputName = document.getElementById('studentName').value.trim();
             if (!inputName) {
