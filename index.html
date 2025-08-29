@@ -134,10 +134,10 @@
     </div>
 
     <script>
-        // ============ 密码管理 ============
+        // ================== 🔐 密码管理 ==================
         let ENCODED_PASSWORD = 'MTIzNDU2'; // '123456'
 
-        // ============ 学生数据 ============
+        // ================== 学生数据 ==================
         const initialStudents = [
             { id: 1, name: "卢淳雅", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
             { id: 2, name: "黄筱晴", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 70 },
@@ -186,7 +186,7 @@
         let students = [];
         let isTeacherLoggedIn = false;
 
-        // ============ 页面加载 ============
+        // ================== 页面加载 ==================
         window.onload = function() {
             // 恢复密码
             const savedPassword = localStorage.getItem('class8Password');
@@ -199,7 +199,7 @@
             if (saved) {
                 try {
                     students = JSON.parse(saved);
-                    console.log('✅ 从 localStorage 加载数据成功');
+                    console.log('✅ 从 localStorage 加载数据成功', students.length + '人');
                 } catch (e) {
                     console.error('❌ 数据解析失败，使用默认名单', e);
                     students = JSON.parse(JSON.stringify(initialStudents));
@@ -209,7 +209,7 @@
                 students = JSON.parse(JSON.stringify(initialStudents));
             }
 
-            // 确保数据有效
+            // 确保 students 是有效数组
             if (!Array.isArray(students) || students.length === 0) {
                 students = JSON.parse(JSON.stringify(initialStudents));
             }
@@ -219,7 +219,7 @@
             updateAllTotals();
         };
 
-        // ============ 工具函数 ============
+        // ================== 工具函数 ==================
         function getRealPassword() {
             try {
                 return atob(ENCODED_PASSWORD);
@@ -234,9 +234,15 @@
             localStorage.setItem('class8Password', ENCODED_PASSWORD);
         }
 
-        // ============ 数据操作 ============
+        // ================== 数据操作 ==================
         function saveData() {
-            localStorage.setItem('class8Students', JSON.stringify(students));
+            try {
+                localStorage.setItem('class8Students', JSON.stringify(students));
+                console.log('✅ 数据已保存：', students.length + '人');
+            } catch (e) {
+                console.error('❌ 保存失败：', e);
+                alert('数据保存失败！请检查浏览器设置');
+            }
         }
 
         function saveAndExit() {
@@ -260,7 +266,7 @@
             }
         }
 
-        // ============ 导出/导入 ============
+        // ================== 导出/导入 ==================
         function exportData() {
             const dataStr = JSON.stringify(students, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -287,20 +293,22 @@
                             throw new Error('数据格式无效');
                         }
                         students = data;
-                        saveData();
+                        saveData(); // ✅ 立即保存
                         generateTeacherTable();
                         updateAllTotals();
                         alert('✅ 数据导入成功！');
                     } catch (err) {
-                        alert('❌ 文件格式错误，请选择正确的备份文件');
+                        alert('❌ 文件格式错误，请使用本系统导出的 .json 文件');
+                        console.error('导入失败：', err);
                     }
                 };
+                reader.onerror = () => alert('❌ 文件读取失败');
                 reader.readAsText(file);
             };
             input.click();
         }
 
-        // ============ 登录系统 ============
+        // ================== 登录系统 ==================
         function loginAsTeacher() {
             const pwd = prompt('请输入老师密码 🔐');
             if (pwd === null) return;
@@ -355,7 +363,7 @@
             alert('✅ 密码已更新！');
         }
 
-        // ============ 表格生成 ============
+        // ================== 表格生成 ==================
         function generateTeacherTable() {
             const tbody = document.getElementById('teacherTableBody');
             let html = '';
@@ -419,7 +427,7 @@
                         divs[idx].textContent = `${dayNames[idx]}:${student.scores[day]}`;
                     }
                 }
-                saveData(); // 每次打分都保存
+                saveData(); // ✅ 每次打分都保存
             }
         }
 
@@ -438,7 +446,7 @@
             }
             const student = students.find(s => s.name === name);
             if (!student) {
-                alert('未找到该学生，请检查姓名是否正确');
+                alert('未找到该学生，请检查姓名是否正确（注意空格）');
                 return;
             }
             document.getElementById('resultName').textContent = student.name;
