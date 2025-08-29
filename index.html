@@ -193,11 +193,39 @@
         ];
 
         // ================== 页面加载 ==================
-        window.onload = function() {
-            const savedPassword = localStorage.getItem('class8Password');
-            if (savedPassword) {
-                ENCODED_PASSWORD = savedPassword;
-            }
+      window.onload = function() {
+    // 1. 恢复密码
+    const savedPassword = localStorage.getItem('class8Password');
+    if (savedPassword) {
+        ENCODED_PASSWORD = savedPassword;
+    }
+
+    // 2. 恢复学生数据
+    const saved = localStorage.getItem('class8Students');
+    if (saved) {
+        try {
+            students = JSON.parse(saved);
+            console.log('✅ 从 localStorage 加载数据成功');
+        } catch (e) {
+            console.error('❌ 数据解析失败，使用默认名单', e);
+            students = JSON.parse(JSON.stringify(initialStudents));
+        }
+    } else {
+        console.log('📁 无保存数据，使用默认学生名单');
+        students = JSON.parse(JSON.stringify(initialStudents));
+    }
+
+    // 3. 确保 students 是数组且有数据
+    if (!Array.isArray(students) || students.length === 0) {
+        console.warn('⚠️ students 为空，重置为默认名单');
+        students = JSON.parse(JSON.stringify(initialStudents));
+    }
+
+    // 4. 生成表格
+    isTeacherLoggedIn = false;
+    generateTeacherTable();
+    updateAllTotals();
+};
 
             const saved = localStorage.getItem('class8Students');
             if (saved) {
@@ -463,3 +491,4 @@
     </script>
 </body>
 </html>
+
