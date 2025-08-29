@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -42,6 +43,8 @@
         .rank-item:nth-child(3) { background-color: #fff8e1; }
         .rank-icon { font-size: 1.5em; }
         .progress-star { background-color: #ffeb3b; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+        .backup-tools { text-align: center; margin: 20px 0; font-size: 1.1em; }
+        .backup-tools button { background-color: #5cb85c; color: white; border: none; padding: 10px 20px; margin: 0 10px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -61,6 +64,13 @@
         <!-- 老师视图 -->
         <div id="teacherView" class="teacher-view">
             <h2 style="text-align:center;">六（8）班语文课堂积分表</h2>
+
+            <!-- 新增：数据备份工具 -->
+            <div class="backup-tools">
+                <button onclick="exportData()">💾 导出数据（保存到电脑）</button>
+                <button onclick="importData()">📂 导入数据（恢复备份）</button>
+            </div>
+
             <div class="week-selector">
                 <label for="weekSelect">第 </label>
                 <select id="weekSelect">
@@ -131,10 +141,8 @@
 
     <script>
         // ================== 🔐 密码管理 ==================
-        // 默认密码是 '123456' 的 Base64 编码
         let ENCODED_PASSWORD = 'MTIzNDU2'; // '123456'
 
-        // 启动时从本地加载已修改的密码
         window.onload = function() {
             const savedPassword = localStorage.getItem('class8Password');
             if (savedPassword) {
@@ -152,7 +160,6 @@
             updateAllTotals();
         };
 
-        // 获取真实密码（解码）
         function getRealPassword() {
             try {
                 return atob(ENCODED_PASSWORD);
@@ -162,7 +169,6 @@
             }
         }
 
-        // 保存新密码（编码后存入 localStorage）
         function setNewPassword(newPwd) {
             ENCODED_PASSWORD = btoa(newPwd);
             localStorage.setItem('class8Password', ENCODED_PASSWORD);
@@ -243,6 +249,42 @@
             }
         }
 
+        // ================== 导出/导入功能 ==================
+        function exportData() {
+            const dataStr = JSON.stringify(students, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '六年八班积分数据_' + new Date().toLocaleDateString() + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            alert('✅ 数据已导出，请保存到安全位置（如微信、邮箱）');
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        students = JSON.parse(event.target.result);
+                        updateAllTotals();
+                        generateTeacherTable();
+                        saveData();
+                        alert('✅ 数据导入成功！');
+                    } catch (err) {
+                        alert('❌ 文件格式错误，请选择正确的备份文件');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
         // ================== 登录与权限 ==================
         function loginAsTeacher() {
             const pwd = prompt('请输入老师密码 🔐');
@@ -292,7 +334,6 @@
             goBackToHome();
         }
 
-        // ================== 修改密码功能 ==================
         function openChangePassword() {
             const oldPwd = prompt('请输入当前密码以修改密码：');
             if (oldPwd !== getRealPassword()) {
