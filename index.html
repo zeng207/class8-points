@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -249,7 +248,7 @@
             }
         }
 
-        // ================== 导出/导入功能 ==================
+        // ================== 新增：导出/导入功能 ==================
         function exportData() {
             const dataStr = JSON.stringify(students, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -259,7 +258,7 @@
             a.download = '六年八班积分数据_' + new Date().toLocaleDateString() + '.json';
             a.click();
             URL.revokeObjectURL(url);
-            alert('✅ 数据已导出，请保存到安全位置（如微信、邮箱）');
+            alert('✅ 数据已导出，请保存到电脑或微信中');
         }
 
         function importData() {
@@ -354,7 +353,7 @@
             }
 
             setNewPassword(newPwd);
-            alert('✅ 密码已成功更新！下次打开将使用新密码。');
+            alert('✅ 密码已成功更新！');
         }
 
         // ================== 表格与积分逻辑 ==================
