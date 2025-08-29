@@ -64,7 +64,7 @@
         <div id="teacherView" class="teacher-view">
             <h2 style="text-align:center;">六（8）班语文课堂积分表</h2>
 
-            <!-- 新增：数据备份工具 -->
+            <!-- 导出/导入按钮 -->
             <div class="backup-tools">
                 <button onclick="exportData()">💾 导出数据（保存到电脑）</button>
                 <button onclick="importData()">📂 导入数据（恢复备份）</button>
@@ -88,7 +88,6 @@
                     </tr>
                 </thead>
                 <tbody id="teacherTableBody">
-                    <!-- 由JS动态生成 -->
                 </tbody>
             </table>
 
@@ -121,16 +120,12 @@
 
                 <div class="rankings">
                     <h2>🌟 本周进步之星</h2>
-                    <div id="progressList">
-                        <!-- 由JS填充 -->
-                    </div>
+                    <div id="progressList"></div>
                 </div>
 
                 <div class="rankings">
                     <h2>🏆 本周积分前十名</h2>
-                    <div id="top10List">
-                        <!-- 由JS填充 -->
-                    </div>
+                    <div id="top10List"></div>
                 </div>
 
                 <button class="back-btn" onclick="goBackToHome()">返回首页</button>
@@ -139,14 +134,10 @@
     </div>
 
     <script>
-        // ================== 🔐 密码管理 ==================
+        // ============ 密码管理 ============
         let ENCODED_PASSWORD = 'MTIzNDU2'; // '123456'
 
-        // 全局变量
-        let students = [];
-        let isTeacherLoggedIn = false;
-
-        // ================== 学生数据 ==================
+        // ============ 学生数据 ============
         const initialStudents = [
             { id: 1, name: "卢淳雅", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
             { id: 2, name: "黄筱晴", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 70 },
@@ -192,50 +183,34 @@
             { id: 42, name: "吴泽楷", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 30 }
         ];
 
-        // ================== 页面加载 ==================
-      window.onload = function() {
-    // 1. 恢复密码
-    const savedPassword = localStorage.getItem('class8Password');
-    if (savedPassword) {
-        ENCODED_PASSWORD = savedPassword;
-    }
+        let students = [];
+        let isTeacherLoggedIn = false;
 
-    // 2. 恢复学生数据
-    const saved = localStorage.getItem('class8Students');
-    if (saved) {
-        try {
-            students = JSON.parse(saved);
-            console.log('✅ 从 localStorage 加载数据成功');
-        } catch (e) {
-            console.error('❌ 数据解析失败，使用默认名单', e);
-            students = JSON.parse(JSON.stringify(initialStudents));
-        }
-    } else {
-        console.log('📁 无保存数据，使用默认学生名单');
-        students = JSON.parse(JSON.stringify(initialStudents));
-    }
+        // ============ 页面加载 ============
+        window.onload = function() {
+            // 恢复密码
+            const savedPassword = localStorage.getItem('class8Password');
+            if (savedPassword) {
+                ENCODED_PASSWORD = savedPassword;
+            }
 
-    // 3. 确保 students 是数组且有数据
-    if (!Array.isArray(students) || students.length === 0) {
-        console.warn('⚠️ students 为空，重置为默认名单');
-        students = JSON.parse(JSON.stringify(initialStudents));
-    }
-
-    // 4. 生成表格
-    isTeacherLoggedIn = false;
-    generateTeacherTable();
-    updateAllTotals();
-};
-
+            // 恢复学生数据
             const saved = localStorage.getItem('class8Students');
             if (saved) {
                 try {
                     students = JSON.parse(saved);
+                    console.log('✅ 从 localStorage 加载数据成功');
                 } catch (e) {
-                    console.error("数据解析失败，使用默认数据");
+                    console.error('❌ 数据解析失败，使用默认名单', e);
                     students = JSON.parse(JSON.stringify(initialStudents));
                 }
             } else {
+                console.log('📁 无保存数据，使用默认名单');
+                students = JSON.parse(JSON.stringify(initialStudents));
+            }
+
+            // 确保数据有效
+            if (!Array.isArray(students) || students.length === 0) {
                 students = JSON.parse(JSON.stringify(initialStudents));
             }
 
@@ -244,6 +219,7 @@
             updateAllTotals();
         };
 
+        // ============ 工具函数 ============
         function getRealPassword() {
             try {
                 return atob(ENCODED_PASSWORD);
@@ -258,7 +234,7 @@
             localStorage.setItem('class8Password', ENCODED_PASSWORD);
         }
 
-        // ================== 数据操作 ==================
+        // ============ 数据操作 ============
         function saveData() {
             localStorage.setItem('class8Students', JSON.stringify(students));
         }
@@ -284,7 +260,7 @@
             }
         }
 
-        // ================== 导出/导入 ==================
+        // ============ 导出/导入 ============
         function exportData() {
             const dataStr = JSON.stringify(students, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -294,7 +270,7 @@
             a.download = '六年八班积分数据_' + new Date().toLocaleDateString() + '.json';
             a.click();
             URL.revokeObjectURL(url);
-            alert('✅ 数据已导出，请保存到电脑');
+            alert('✅ 数据已导出，请保存到电脑或微信');
         }
 
         function importData() {
@@ -306,13 +282,17 @@
                 const reader = new FileReader();
                 reader.onload = event => {
                     try {
-                        students = JSON.parse(event.target.result);
-                        updateAllTotals();
-                        generateTeacherTable();
+                        const data = JSON.parse(event.target.result);
+                        if (!Array.isArray(data) || !data[0].name) {
+                            throw new Error('数据格式无效');
+                        }
+                        students = data;
                         saveData();
+                        generateTeacherTable();
+                        updateAllTotals();
                         alert('✅ 数据导入成功！');
                     } catch (err) {
-                        alert('❌ 文件格式错误');
+                        alert('❌ 文件格式错误，请选择正确的备份文件');
                     }
                 };
                 reader.readAsText(file);
@@ -320,7 +300,7 @@
             input.click();
         }
 
-        // ================== 登录 ==================
+        // ============ 登录系统 ============
         function loginAsTeacher() {
             const pwd = prompt('请输入老师密码 🔐');
             if (pwd === null) return;
@@ -329,7 +309,7 @@
                 sessionStorage.setItem('teacherLoggedIn', 'true');
                 showTeacherView();
             } else {
-                alert('密码错误！');
+                alert('密码错误！请重新输入。');
             }
         }
 
@@ -375,7 +355,7 @@
             alert('✅ 密码已更新！');
         }
 
-        // ================== 表格 ==================
+        // ============ 表格生成 ============
         function generateTeacherTable() {
             const tbody = document.getElementById('teacherTableBody');
             let html = '';
@@ -439,8 +419,7 @@
                         divs[idx].textContent = `${dayNames[idx]}:${student.scores[day]}`;
                     }
                 }
-                // ✅ 每次打分都保存
-                localStorage.setItem('class8Students', JSON.stringify(students));
+                saveData(); // 每次打分都保存
             }
         }
 
@@ -459,7 +438,7 @@
             }
             const student = students.find(s => s.name === name);
             if (!student) {
-                alert('未找到该学生，请检查姓名是否正确（注意空格）');
+                alert('未找到该学生，请检查姓名是否正确');
                 return;
             }
             document.getElementById('resultName').textContent = student.name;
@@ -491,4 +470,3 @@
     </script>
 </body>
 </html>
-
