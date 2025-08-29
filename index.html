@@ -11,9 +11,39 @@
         .header { text-align: center; margin-bottom: 30px; }
         .header h1 { color: #4a90e2; font-size: 2.5em; margin-bottom: 10px; }
         .header p { color: #666; font-size: 1.2em; }
+        .class-photo { width: 100%; max-height: 400px; object-fit: cover; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: 20px 0; }
         .entry-buttons { text-align: center; margin: 30px 0; }
-        .entry-buttons button { background-color: #4a90e2; color: white; border: none; padding: 15px 30px; font-size: 1.2em; border-radius: 10px; cursor: pointer; margin: 0 15px; }
+        .entry-buttons button { background-color: #4a90e2; color: white; border: none; padding: 15px 30px; font-size: 1.2em; border-radius: 10px; cursor: pointer; margin: 0 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background-color 0.3s; }
+        .entry-buttons button:hover { background-color: #357abd; }
         .teacher-view, .student-view { display: none; }
+        .week-selector { text-align: center; margin: 20px 0; font-size: 1.2em; }
+        .week-selector select { padding: 10px; font-size: 1em; border-radius: 5px; border: 1px solid #ccc; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #4a90e2; color: white; font-weight: bold; }
+        .name-cell { text-align: left; padding-left: 20px; font-weight: bold; }
+        .daily-score { font-size: 0.8em; color: #666; margin-top: 2px; display: flex; justify-content: space-around; }
+        .daily-score div { width: 20%; text-align: center; }
+        .total { font-weight: bold; color: #4a90e2; }
+        .score-input { width: 60px; padding: 5px; margin: 0 auto; border: 2px solid #ddd; border-radius: 5px; text-align: center; font-size: 1em; }
+        .score-input:focus { border-color: #4a90e2; outline: none; }
+        .actions { text-align: center; margin: 20px 0; }
+        .actions button { background-color: #f0ad4e; color: white; border: none; padding: 10px 20px; margin: 0 10px; border-radius: 5px; cursor: pointer; font-size: 1em; }
+        .back-btn { display: block; width: 120px; margin: 20px auto; background-color: #6c757d; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; text-align: center; }
+        .student-form, .rankings { text-align: center; margin: 50px 0; }
+        .student-form input { padding: 10px; width: 200px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; margin-right: 10px; }
+        .student-form button { background-color: #4a90e2; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .student-result { background-color: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 800px; margin: 30px auto; }
+        .student-result h2, .rankings h2 { color: #4a90e2; margin-bottom: 20px; text-align: center; }
+        .result-item, .rank-item { margin: 15px 0; font-size: 1.2em; }
+        .rank-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px dashed #eee; }
+        .rank-item:first-child { background-color: #fff4e6; }
+        .rank-item:nth-child(2) { background-color: #f0f8ff; }
+        .rank-item:nth-child(3) { background-color: #fff8e1; }
+        .rank-icon { font-size: 1.5em; }
+        .progress-star { background-color: #ffeb3b; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+        .backup-tools { text-align: center; margin: 20px 0; font-size: 1.1em; }
+        .backup-tools button { background-color: #5cb85c; color: white; border: none; padding: 10px 20px; margin: 0 10px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -23,6 +53,8 @@
             <p>记录成长，快乐学习</p>
         </div>
 
+        <img src="class.jpg" alt="六年八班全家福" class="class-photo">
+        
         <div class="entry-buttons" id="homeButtons">
             <button onclick="loginAsTeacher()">我是老师 👩‍🏫</button>
             <button onclick="showStudentView()">我是学生 🧒</button>
@@ -32,75 +64,209 @@
         <div id="teacherView" class="teacher-view">
             <h2 style="text-align:center;">六（8）班语文课堂积分表</h2>
 
-            <!-- ✅ 导出/导入按钮 -->
-            <div style="text-align:center; margin:20px 0;">
-                <button onclick="exportData()" style="background:green; color:white; border:none; padding:10px 20px; margin:5px; border-radius:5px;">💾 导出数据</button>
-                <button onclick="importData()" style="background:blue; color:white; border:none; padding:10px 20px; margin:5px; border-radius:5px;">📂 导入数据</button>
+            <!-- 新增：数据备份工具 -->
+            <div class="backup-tools">
+                <button onclick="exportData()">💾 导出数据（保存到电脑）</button>
+                <button onclick="importData()">📂 导入数据（恢复备份）</button>
             </div>
 
-            <p style="text-align:center; font-size:1.2em; color:#4a90e2;">功能已恢复！</p>
-            <button onclick="goBackToHome()">返回首页</button>
+            <div class="week-selector">
+                <label for="weekSelect">第 </label>
+                <select id="weekSelect">
+                    <option>1</option><option>2</option><option>3</option><option>4</option>
+                    <option>5</option><option>6</option><option>7</option><option>8</option>
+                    <option>9</option><option>10</option>
+                </select>
+                <label for="weekSelect"> 周</label>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>序号</th><th>姓名</th><th>周一</th><th>周二</th><th>周三</th><th>周四</th><th>周五</th><th>总分</th>
+                        <th>序号</th><th>姓名</th><th>周一</th><th>周二</th><th>周三</th><th>周四</th><th>周五</th><th>总分</th>
+                    </tr>
+                </thead>
+                <tbody id="teacherTableBody">
+                    <!-- 由JS动态生成 -->
+                </tbody>
+            </table>
+
+            <div class="actions">
+                <button onclick="saveAndExit()">保存并退出</button>
+                <button onclick="clearWeekData()">清空本周数据</button>
+                <button onclick="goBackToHome()">返回首页</button>
+                <button onclick="logout()" style="background-color: #d9534f;">退出登录</button>
+                <button onclick="openChangePassword()" style="background-color: #5cb85c;">修改密码</button>
+            </div>
+            <p style="text-align:center; color:#999; font-size:0.9em; margin-top:10px;">
+                🔐 温馨提示：请老师离开前点击【退出登录】以保护数据安全。
+            </p>
         </div>
 
-        <!-- 学生视图 -->
+        <!-- 学生查看页 -->
         <div id="studentView" class="student-view">
-            <h2 style="text-align:center;">学生功能正常</h2>
-            <button onclick="goBackToHome()">返回首页</button>
+            <div class="student-form">
+                <h2>查看我的积分</h2>
+                <input type="text" id="studentName" placeholder="请输入您的姓名">
+                <button onclick="checkStudent()">查询</button>
+            </div>
+
+            <div class="student-result" id="studentResult" style="display:none;">
+                <h2>欢迎，<span id="resultName"></span>！🌟</h2>
+                <div class="result-item">您本周的积分是：<span id="resultScore">0</span> 分</div>
+                <div class="result-item">您在班级中的排名是第 <span id="resultRank">1</span> 名</div>
+                <div class="result-item" id="resultReward"></div>
+                <div class="result-item"><span id="resultProgress"></span></div>
+
+                <div class="rankings">
+                    <h2>🌟 本周进步之星</h2>
+                    <div id="progressList">
+                        <!-- 由JS填充 -->
+                    </div>
+                </div>
+
+                <div class="rankings">
+                    <h2>🏆 本周积分前十名</h2>
+                    <div id="top10List">
+                        <!-- 由JS填充 -->
+                    </div>
+                </div>
+
+                <button class="back-btn" onclick="goBackToHome()">返回首页</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // ====== 核心函数 ======
-        function loginAsTeacher() {
-            const pwd = prompt('请输入老师密码 🔐');
-            if (pwd === null) return;
+        // ================== 🔐 密码管理 ==================
+        let ENCODED_PASSWORD = 'MTIzNDU2'; // '123456'
 
-            // 默认密码 123456
-            const realPwd = atob('MTIzNDU2'); // '123456'
+        // 全局变量
+        let students = [];
+        let isTeacherLoggedIn = false;
 
-            if (pwd === realPwd) {
-                sessionStorage.setItem('teacherLoggedIn', 'true');
-                showTeacherView();
+        // ================== 学生数据 ==================
+        const initialStudents = [
+            { id: 1, name: "卢淳雅", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
+            { id: 2, name: "黄筱晴", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 70 },
+            { id: 3, name: "李恩可", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 65 },
+            { id: 4, name: "赵元圆", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 60 },
+            { id: 5, name: "周诗霖", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 55 },
+            { id: 6, name: "林梓烁", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 40 },
+            { id: 7, name: "孙晨熙", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 30 },
+            { id: 8, name: "陈正霖", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
+            { id: 9, name: "叶展新", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 45 },
+            { id: 10, name: "孙泽钰", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 40 },
+            { id: 11, name: "汤  媛", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
+            { id: 12, name: "陈可歆", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 35 },
+            { id: 13, name: "王圣漪", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 48 },
+            { id: 14, name: "陈梓宏", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 55 },
+            { id: 15, name: "林雨墕", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
+            { id: 16, name: "齐修远", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 58 },
+            { id: 17, name: "王曾懿", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 42 },
+            { id: 18, name: "连柏衡", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 45 },
+            { id: 19, name: "高  希", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 48 },
+            { id: 20, name: "郭和盛", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 40 },
+            { id: 21, name: "朱铭轩", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 38 },
+            { id: 22, name: "施妍昕", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 52 },
+            { id: 23, name: "陈纪弥", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 45 },
+            { id: 24, name: "王靖萱", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
+            { id: 25, name: "许婉琳", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 45 },
+            { id: 26, name: "龚卓玮", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
+            { id: 27, name: "王胤祥", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 55 },
+            { id: 28, name: "吴锦霖", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 48 },
+            { id: 29, name: "任智翔", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 40 },
+            { id: 30, name: "张莫然", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
+            { id: 31, name: "欧阳鑫怡", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 55 },
+            { id: 32, name: "张雅馨", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 58 },
+            { id: 33, name: "曾琪淑", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
+            { id: 34, name: "孙可馨", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 45 },
+            { id: 35, name: "卢欣怡", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 40 },
+            { id: 36, name: "王子睿", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 50 },
+            { id: 37, name: "肖博恒", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 55 },
+            { id: 38, name: "洪子钦", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 48 },
+            { id: 39, name: "黄恬欣", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 52 },
+            { id: 40, name: "胡佳俊", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 35 },
+            { id: 41, name: "孙杰铭", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 40 },
+            { id: 42, name: "吴泽楷", scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }, total: 0, lastWeek: 30 }
+        ];
+
+        // ================== 页面加载 ==================
+        window.onload = function() {
+            const savedPassword = localStorage.getItem('class8Password');
+            if (savedPassword) {
+                ENCODED_PASSWORD = savedPassword;
+            }
+
+            const saved = localStorage.getItem('class8Students');
+            if (saved) {
+                try {
+                    students = JSON.parse(saved);
+                } catch (e) {
+                    console.error("数据解析失败，使用默认数据");
+                    students = JSON.parse(JSON.stringify(initialStudents));
+                }
             } else {
-                alert('密码错误！请重新输入。');
+                students = JSON.parse(JSON.stringify(initialStudents));
+            }
+
+            isTeacherLoggedIn = false;
+            generateTeacherTable();
+            updateAllTotals();
+        };
+
+        function getRealPassword() {
+            try {
+                return atob(ENCODED_PASSWORD);
+            } catch (e) {
+                alert('密码解码失败，请联系管理员。');
+                return '';
             }
         }
 
-        function showStudentView() {
-            document.getElementById('homeButtons').style.display = 'none';
-            document.querySelector('.header').style.display = 'none';
-            document.getElementById('studentView').style.display = 'block';
+        function setNewPassword(newPwd) {
+            ENCODED_PASSWORD = btoa(newPwd);
+            localStorage.setItem('class8Password', ENCODED_PASSWORD);
         }
 
-        function showTeacherView() {
-            const loggedIn = sessionStorage.getItem('teacherLoggedIn') === 'true';
-            if (!loggedIn) {
-                loginAsTeacher();
-                return;
+        // ================== 数据操作 ==================
+        function saveData() {
+            localStorage.setItem('class8Students', JSON.stringify(students));
+        }
+
+        function saveAndExit() {
+            saveData();
+            alert('✅ 数据已保存！');
+            goBackToHome();
+        }
+
+        function clearWeekData() {
+            if (confirm('确定要清空本周所有数据吗？')) {
+                students.forEach(s => {
+                    s.scores.mon = 0;
+                    s.scores.tue = 0;
+                    s.scores.wed = 0;
+                    s.scores.thu = 0;
+                    s.scores.fri = 0;
+                    s.total = 0;
+                });
+                updateAllTotals();
+                saveData();
             }
-            document.getElementById('homeButtons').style.display = 'none';
-            document.querySelector('.header').style.display = 'none';
-            document.getElementById('teacherView').style.display = 'block';
         }
 
-        function goBackToHome() {
-            document.getElementById('teacherView').style.display = 'none';
-            document.getElementById('studentView').style.display = 'none';
-            document.getElementById('homeButtons').style.display = 'block';
-            document.querySelector('.header').style.display = 'block';
-        }
-
-        // ====== 导出/导入功能 ======
+        // ================== 导出/导入 ==================
         function exportData() {
-            const data = JSON.stringify([{name:"测试",score:100}], null, 2);
-            const blob = new Blob([data], { type: 'application/json' });
+            const dataStr = JSON.stringify(students, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = '六年八班积分备份.json';
+            a.download = '六年八班积分数据_' + new Date().toLocaleDateString() + '.json';
             a.click();
             URL.revokeObjectURL(url);
-            alert('✅ 数据已导出！');
+            alert('✅ 数据已导出，请保存到电脑');
         }
 
         function importData() {
@@ -110,12 +276,15 @@
             input.onchange = e => {
                 const file = e.target.files[0];
                 const reader = new FileReader();
-                reader.onload = () => {
+                reader.onload = event => {
                     try {
-                        JSON.parse(reader.result);
-                        alert('✅ 文件格式正确，可导入！');
-                    } catch {
-                        alert('❌ 文件格式错误，请选择正确的 JSON 文件');
+                        students = JSON.parse(event.target.result);
+                        updateAllTotals();
+                        generateTeacherTable();
+                        saveData();
+                        alert('✅ 数据导入成功！');
+                    } catch (err) {
+                        alert('❌ 文件格式错误');
                     }
                 };
                 reader.readAsText(file);
@@ -123,14 +292,174 @@
             input.click();
         }
 
-        // ====== 页面加载 ======
-        window.onload = function() {
-            // 检查是否已登录
-            const loggedIn = sessionStorage.getItem('teacherLoggedIn') === 'true';
-            if (loggedIn) {
+        // ================== 登录 ==================
+        function loginAsTeacher() {
+            const pwd = prompt('请输入老师密码 🔐');
+            if (pwd === null) return;
+            if (pwd === getRealPassword()) {
+                isTeacherLoggedIn = true;
+                sessionStorage.setItem('teacherLoggedIn', 'true');
                 showTeacherView();
+            } else {
+                alert('密码错误！');
             }
-        };
+        }
+
+        function showTeacherView() {
+            const loggedIn = sessionStorage.getItem('teacherLoggedIn') === 'true';
+            if (!loggedIn) { loginAsTeacher(); return; }
+            document.getElementById('homeButtons').style.display = 'none';
+            document.querySelector('.header').style.display = 'none';
+            document.querySelector('.class-photo').style.display = 'none';
+            document.getElementById('teacherView').style.display = 'block';
+        }
+
+        function showStudentView() {
+            document.getElementById('homeButtons').style.display = 'none';
+            document.querySelector('.header').style.display = 'none';
+            document.querySelector('.class-photo').style.display = 'none';
+            document.getElementById('studentView').style.display = 'block';
+        }
+
+        function goBackToHome() {
+            document.getElementById('teacherView').style.display = 'none';
+            document.getElementById('studentView').style.display = 'none';
+            document.getElementById('homeButtons').style.display = 'block';
+            document.querySelector('.header').style.display = 'block';
+            document.querySelector('.class-photo').style.display = 'block';
+        }
+
+        function logout() {
+            sessionStorage.removeItem('teacherLoggedIn');
+            isTeacherLoggedIn = false;
+            alert('已安全退出登录');
+            goBackToHome();
+        }
+
+        function openChangePassword() {
+            const oldPwd = prompt('请输入当前密码：');
+            if (oldPwd !== getRealPassword()) { alert('原密码错误！'); return; }
+            const newPwd = prompt('请输入新密码：');
+            if (!newPwd || newPwd.trim() === '') { alert('密码不能为空！'); return; }
+            const confirmPwd = prompt('请再次输入：');
+            if (newPwd !== confirmPwd) { alert('两次输入不一致！'); return; }
+            setNewPassword(newPwd);
+            alert('✅ 密码已更新！');
+        }
+
+        // ================== 表格 ==================
+        function generateTeacherTable() {
+            const tbody = document.getElementById('teacherTableBody');
+            let html = '';
+            for (let i = 0; i < 21; i++) {
+                const left = students[i];
+                const right = students[i + 21] || { id: '', name: '', scores: { mon:0,tue:0,wed:0,thu:0,fri:0 }, total: 0 };
+                html += `
+                <tr>
+                    <td>${left.id}</td>
+                    <td class="name-cell">${left.name}
+                        <div class="daily-score">
+                            <div>周一:${left.scores.mon}</div>
+                            <div>周二:${left.scores.tue}</div>
+                            <div>周三:${left.scores.wed}</div>
+                            <div>周四:${left.scores.thu}</div>
+                            <div>周五:${left.scores.fri}</div>
+                        </div>
+                    </td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-mon" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'mon',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-tue" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'tue',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-wed" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'wed',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-thu" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'thu',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-fri" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'fri',parseInt(this.value)||0);this.value='';}"></td>
+                    <td class="total" id="total-${left.id}">${left.total}</td>
+                    
+                    <td>${right.id}</td>
+                    <td class="name-cell">${right.name}
+                        <div class="daily-score">
+                            <div>周一:${right.scores.mon}</div>
+                            <div>周二:${right.scores.tue}</div>
+                            <div>周三:${right.scores.wed}</div>
+                            <div>周四:${right.scores.thu}</div>
+                            <div>周五:${right.scores.fri}</div>
+                        </div>
+                    </td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-mon" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'mon',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-tue" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'tue',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-wed" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'wed',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-thu" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'thu',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-fri" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'fri',parseInt(this.value)||0);this.value='';}"></td>
+                    <td class="total" id="total-${right.id}">${right.total}</td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        function updateScore(id, day, points) {
+            if (points === 0) return;
+            const student = students.find(s => s.id === id);
+            if (student) {
+                student.scores[day] += points;
+                student.total = Object.values(student.scores).reduce((a,b)=>a+b, 0);
+                document.getElementById(`total-${id}`).textContent = student.total;
+                const row = document.querySelector(`#teacherTableBody tr:nth-child(${Math.ceil(id/2)})`);
+                if (row) {
+                    const days = ['mon','tue','wed','thu','fri'];
+                    const dayNames = ['周一','周二','周三','周四','周五'];
+                    const idx = days.indexOf(day);
+                    const divs = row.querySelectorAll('.daily-score div');
+                    if (idx >= 0 && divs[idx]) {
+                        divs[idx].textContent = `${dayNames[idx]}:${student.scores[day]}`;
+                    }
+                }
+                // ✅ 每次打分都保存
+                localStorage.setItem('class8Students', JSON.stringify(students));
+            }
+        }
+
+        function updateAllTotals() {
+            students.forEach(s => {
+                s.total = Object.values(s.scores).reduce((a,b)=>a+b, 0);
+                const elem = document.getElementById(`total-${s.id}`);
+                if (elem) elem.textContent = s.total;
+            });
+        }
+
+        function checkStudent() {
+            const name = document.getElementById('studentName').value.trim();
+            if (!Array.isArray(students) || students.length === 0) {
+                students = JSON.parse(JSON.stringify(initialStudents));
+            }
+            const student = students.find(s => s.name === name);
+            if (!student) {
+                alert('未找到该学生，请检查姓名是否正确（注意空格）');
+                return;
+            }
+            document.getElementById('resultName').textContent = student.name;
+            document.getElementById('resultScore').textContent = student.total;
+            const sorted = [...students].sort((a,b)=>b.total-a.total);
+            document.getElementById('resultRank').textContent = sorted.findIndex(s=>s.id===student.id)+1;
+            document.getElementById('resultReward').innerHTML = 
+                student.total >= 30 ? `🎉 可抵扣 <strong>${Math.floor(student.total/30)} 项</strong> 作业！` : `💪 继续加油！`;
+            const progress = student.total - student.lastWeek;
+            document.getElementById('resultProgress').innerHTML = progress > 0 
+                ? `📈 进步 <strong>+${progress}分</strong>！` : progress < 0 
+                ? `📉 退步 <strong>${-progress}分</strong>` : `📊 保持稳定`;
+            updateRankings();
+            document.getElementById('studentResult').style.display = 'block';
+        }
+
+        function updateRankings() {
+            const top10 = [...students].sort((a,b)=>b.total-a.total).slice(0,10);
+            document.getElementById('top10List').innerHTML = top10.map((s,i)=>{
+                const medal = ['🥇','🥈','🥉'][i] || '';
+                return `<div class="rank-item"><span class="rank-icon">${medal}</span><span>${s.name}</span><span>${s.total}分</span></div>`;
+            }).join('');
+            const progressList = students.map(s=>({name:s.name, p:s.total-s.lastWeek}))
+                .filter(s=>s.p>0).sort((a,b)=>b.p-a.p).slice(0,3);
+            document.getElementById('progressList').innerHTML = progressList.length > 0
+                ? progressList.map(s=>`<div class="rank-item"><span class="progress-star">⭐</span><span>${s.name}</span><span>+${s.p}分</span></div>`).join('')
+                : '<div class="rank-item">本周暂无显著进步的同学，大家加油！</div>';
+        }
     </script>
 </body>
 </html>
