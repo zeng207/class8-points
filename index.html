@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>六年八班课堂积分乐园</title>
+    <title>六年八八班课堂积分乐园</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Microsoft YaHei', sans-serif; background-color: #f0f8ff; color: #333; }
@@ -44,6 +44,7 @@
         .progress-star { background-color: #ffeb3b; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .backup-tools { text-align: center; margin: 20px 0; font-size: 1.1em; }
         .backup-tools button { background-color: #5cb85c; color: white; border: none; padding: 10px 20px; margin: 0 10px; border-radius: 5px; cursor: pointer; }
+        .save-status { text-align: center; color: #4a9; font-size: 0.9em; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -63,6 +64,9 @@
         <!-- 老师视图 -->
         <div id="teacherView" class="teacher-view">
             <h2 style="text-align:center;">六（8）班语文课堂积分表</h2>
+
+            <!-- 保存状态 -->
+            <p class="save-status" id="saveStatus">📌 数据自动保存中...</p>
 
             <!-- 导出/导入按钮 -->
             <div class="backup-tools">
@@ -188,13 +192,11 @@
 
         // ================== 页面加载 ==================
         window.onload = function() {
-            // 恢复密码
             const savedPassword = localStorage.getItem('class8Password');
             if (savedPassword) {
                 ENCODED_PASSWORD = savedPassword;
             }
 
-            // 恢复学生数据
             const saved = localStorage.getItem('class8Students');
             if (saved) {
                 try {
@@ -209,7 +211,6 @@
                 students = JSON.parse(JSON.stringify(initialStudents));
             }
 
-            // 确保 students 是有效数组
             if (!Array.isArray(students) || students.length === 0) {
                 students = JSON.parse(JSON.stringify(initialStudents));
             }
@@ -217,6 +218,13 @@
             isTeacherLoggedIn = false;
             generateTeacherTable();
             updateAllTotals();
+
+            // 显示上次保存时间
+            const lastSave = localStorage.getItem('class8LastSave');
+            const statusEl = document.getElementById('saveStatus');
+            if (lastSave) {
+                statusEl.textContent = `📌 最后保存于 ${new Date(parseInt(lastSave)).toLocaleString()}`;
+            }
         };
 
         // ================== 工具函数 ==================
@@ -237,11 +245,18 @@
         // ================== 数据操作 ==================
         function saveData() {
             try {
-                localStorage.setItem('class8Students', JSON.stringify(students));
-                console.log('✅ 数据已保存：', students.length + '人');
+                const dataToSave = JSON.stringify(students);
+                localStorage.setItem('class8Students', dataToSave);
+                localStorage.setItem('class8LastSave', Date.now().toString());
+                document.getElementById('saveStatus').textContent = `📌 已自动保存于 ${new Date().toLocaleTimeString()}`;
+                console.log('✅ 数据已保存');
             } catch (e) {
                 console.error('❌ 保存失败：', e);
-                alert('数据保存失败！请检查浏览器设置');
+                if (e.name === 'QuotaExceededError') {
+                    alert('❌ 存储空间不足！建议导出数据后清空');
+                } else {
+                    alert('❌ 数据保存失败！请检查浏览器是否为无痕模式');
+                }
             }
         }
 
@@ -293,7 +308,7 @@
                             throw new Error('数据格式无效');
                         }
                         students = data;
-                        saveData(); // ✅ 立即保存
+                        saveData();
                         generateTeacherTable();
                         updateAllTotals();
                         alert('✅ 数据导入成功！');
@@ -382,11 +397,21 @@
                             <div>周五:${left.scores.fri}</div>
                         </div>
                     </td>
-                    <td><input type="number" class="score-input" id="input-${left.id}-mon" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'mon',parseInt(this.value)||0);this.value='';}"></td>
-                    <td><input type="number" class="score-input" id="input-${left.id}-tue" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'tue',parseInt(this.value)||0);this.value='';}"></td>
-                    <td><input type="number" class="score-input" id="input-${left.id}-wed" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'wed',parseInt(this.value)||0);this.value='';}"></td>
-                    <td><input type="number" class="score-input" id="input-${left.id}-thu" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'thu',parseInt(this.value)||0);this.value='';}"></td>
-                    <td><input type="number" class="score-input" id="input-${left.id}-fri" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${left.id},'fri',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-mon" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'mon',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'mon',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-tue" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'tue',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'tue',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-wed" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'wed',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'wed',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-thu" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'thu',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'thu',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${left.id}-fri" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${left.id},'fri',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${left.id},'fri',parseInt(this.value)||0);this.value='';}"></td>
                     <td class="total" id="total-${left.id}">${left.total}</td>
                     
                     <td>${right.id}</td>
@@ -399,11 +424,21 @@
                             <div>周五:${right.scores.fri}</div>
                         </div>
                     </td>
-                    <td><input type="number" class="score-input" id="input-${right.id}-mon" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'mon',parseInt(this.value)||0);this.value='';}"></td>
-                    <td><input type="number" class="score-input" id="input-${right.id}-tue" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'tue',parseInt(this.value)||0);this.value='';}"></td>
-                    <td><input type="number" class="score-input" id="input-${right.id}-wed" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'wed',parseInt(this.value)||0);this.value='';}"></td>
-                    <td><input type="number" class="score-input" id="input-${right.id}-thu" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'thu',parseInt(this.value)||0);this.value='';}"></td>
-                    <td><input type="number" class="score-input" id="input-${right.id}-fri" placeholder="0" onkeydown="if(event.key==='Enter'){updateScore(${right.id},'fri',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-mon" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'mon',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'mon',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-tue" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'tue',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'tue',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-wed" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'wed',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'wed',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-thu" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'thu',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'thu',parseInt(this.value)||0);this.value='';}"></td>
+                    <td><input type="number" class="score-input" id="input-${right.id}-fri" placeholder="0"
+                        onkeydown="if(event.key==='Enter'){updateScore(${right.id},'fri',parseInt(this.value)||0);this.value='';}"
+                        onblur="if(this.value.trim()!==''){updateScore(${right.id},'fri',parseInt(this.value)||0);this.value='';}"></td>
                     <td class="total" id="total-${right.id}">${right.total}</td>
                 </tr>`;
             }
@@ -427,7 +462,7 @@
                         divs[idx].textContent = `${dayNames[idx]}:${student.scores[day]}`;
                     }
                 }
-                saveData(); // ✅ 每次打分都保存
+                saveData(); // ✅ 每次修改都保存
             }
         }
 
@@ -440,25 +475,43 @@
         }
 
         function checkStudent() {
-            const name = document.getElementById('studentName').value.trim();
+            const inputName = document.getElementById('studentName').value.trim();
+            if (!inputName) {
+                alert('请输入姓名！');
+                return;
+            }
+
             if (!Array.isArray(students) || students.length === 0) {
                 students = JSON.parse(JSON.stringify(initialStudents));
             }
-            const student = students.find(s => s.name === name);
+
+            const normalizedInput = inputName.replace(/\s+/g, '');
+            const student = students.find(s => s.name.replace(/\s+/g, '') === normalizedInput);
+
             if (!student) {
-                alert('未找到该学生，请检查姓名是否正确（注意空格）');
+                alert('未找到该学生，请检查姓名是否正确。\n提示：注意姓名中的空格（如“汤  媛”有两个空格）');
                 return;
             }
+
             document.getElementById('resultName').textContent = student.name;
             document.getElementById('resultScore').textContent = student.total;
-            const sorted = [...students].sort((a,b)=>b.total-a.total);
-            document.getElementById('resultRank').textContent = sorted.findIndex(s=>s.id===student.id)+1;
+
+            const sorted = [...students].sort((a,b) => b.total - a.total);
+            const rank = sorted.findIndex(s => s.id === student.id) + 1;
+            document.getElementById('resultRank').textContent = rank;
+
             document.getElementById('resultReward').innerHTML = 
-                student.total >= 30 ? `🎉 可抵扣 <strong>${Math.floor(student.total/30)} 项</strong> 作业！` : `💪 继续加油！`;
+                student.total >= 30 
+                    ? `🎉 可抵扣 <strong>${Math.floor(student.total/30)} 项</strong> 作业！` 
+                    : `💪 继续加油！`;
+
             const progress = student.total - student.lastWeek;
             document.getElementById('resultProgress').innerHTML = progress > 0 
-                ? `📈 进步 <strong>+${progress}分</strong>！` : progress < 0 
-                ? `📉 退步 <strong>${-progress}分</strong>` : `📊 保持稳定`;
+                ? `📈 进步 <strong>+${progress}分</strong>！` 
+                : progress < 0 
+                ? `📉 退步 <strong>${-progress}分</strong>` 
+                : `📊 保持稳定`;
+
             updateRankings();
             document.getElementById('studentResult').style.display = 'block';
         }
@@ -469,8 +522,10 @@
                 const medal = ['🥇','🥈','🥉'][i] || '';
                 return `<div class="rank-item"><span class="rank-icon">${medal}</span><span>${s.name}</span><span>${s.total}分</span></div>`;
             }).join('');
+
             const progressList = students.map(s=>({name:s.name, p:s.total-s.lastWeek}))
                 .filter(s=>s.p>0).sort((a,b)=>b.p-a.p).slice(0,3);
+
             document.getElementById('progressList').innerHTML = progressList.length > 0
                 ? progressList.map(s=>`<div class="rank-item"><span class="progress-star">⭐</span><span>${s.name}</span><span>+${s.p}分</span></div>`).join('')
                 : '<div class="rank-item">本周暂无显著进步的同学，大家加油！</div>';
