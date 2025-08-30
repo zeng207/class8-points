@@ -1,350 +1,466 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>班级积分系统</title>
+  <meta charset="UTF-8">
+  <title>美女玛丽游戏（双关卡版）</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    input, button, select { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 4px; }
-    button { background: #007bff; color: white; cursor: pointer; }
-    button.secondary { background: #6c757d; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #007bff; color: white; }
-    .form-group { margin: 15px 0; }
-    .hidden { display: none; }
-    .error { color: red; }
-    .auto-saved { color: green; font-size: 12px; }
-    .storage-warning { color: red; font-weight: bold; padding: 10px; background: #ffebee; border-radius: 4px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #222;
+      font-family: "Microsoft YaHei", sans-serif;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 90vh;
+      background: #88ddee;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: #fff;
+      font-size: 16px;
+      z-index: 10;
+    }
+    #instructions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: rgba(255,255,255,0.7);
+      font-size: 14px;
+      z-index: 10;
+    }
+    #restartBtn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 30px;
+      background: #fff;
+      border: none;
+      border-radius: 30px;
+      color: #333;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      z-index: 20;
+    }
+    #restartBtn:hover {
+      background: #f0f0f0;
+      transform: translateX(-50%) scale(1.05);
+      transition: all 0.2s;
+    }
+    #fullscreenBtn {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      border: none;
+      border-radius: 30px;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      z-index: 20;
+    }
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.9);
+      color: #fff;
+      padding: 25px 40px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 20px;
+      z-index: 30;
+      display: none;
+    }
+    #gameOver button {
+      margin-top: 15px;
+      padding: 10px 25px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #gameOver button:hover {
+      background: #45a049;
+    }
   </style>
 </head>
 <body>
+  <div id="container">
+    <canvas id="game"></canvas>
 
-<!-- 存储警告 -->
-<div id="storageWarning" class="storage-warning hidden">
-  ⚠️ 本地存储不可用！请关闭无痕模式，或使用服务器打开（不要双击文件）。
-</div>
+    <div id="ui">金币: <span id="coinCount">0</span> | 关卡: <span id="levelDisplay">1</span></div>
+    <div id="instructions">WASD/方向键移动跳跃</div>
 
-<!-- 登录页 -->
-<div class="container" id="loginPage">
-  <h2>📌 登录系统</h2>
-  <div class="form-group">
-    <label><input type="radio" name="role" value="teacher" checked> 教师登录（请输入密码）</label>
-    <input type="password" id="teacherPassword" placeholder="密码" />
-  </div>
-  <div class="form-group">
-    <label><input type="radio" name="role" value="student"> 学生登录（请输入姓名）</label>
-    <input type="text" id="studentName" placeholder="请输入你的姓名" />
-  </div>
-  <button onclick="login()">登录</button>
-  <p id="loginMsg" class="error"></p>
-</div>
+    <button id="restartBtn">🎮 点击开始游戏</button>
+    <button id="fullscreenBtn">⛶ 全屏</button>
 
-<!-- 主界面 -->
-<div class="container hidden" id="mainPage">
-  <h2>📊 班级积分管理系统</h2>
-  <p>欢迎，<strong id="userDisplay"></strong>！</p>
-
-  <!-- 教师功能区 -->
-  <div id="teacherControls" class="hidden">
-    <button onclick="addStudent()" style="margin: 10px 0;">➕ 添加学生</button>
-    <button onclick="exportData()">📤 导出数据</button>
-    <input type="file" id="importFile" accept=".json" style="margin: 10px 0;" />
-    <button onclick="importData()">📥 导入数据</button>
-    <button onclick="logout()" class="secondary">🚪 退出</button>
-    <p class="auto-saved" id="saveStatus"></p>
+    <div id="gameOver">
+      <p id="gameOverMessage">准备开始冒险！</p>
+      <button onclick="restartGame()">再玩一次</button>
+    </div>
   </div>
 
-  <!-- 学生只读提示 -->
-  <div id="studentControls" class="hidden">
-    <button onclick="logout()" class="secondary">🚪 退出</button>
-    <p class="auto-saved" id="saveStatus"></p>
-  </div>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const uiCoin = document.getElementById("coinCount");
+    const levelDisplay = document.getElementById("levelDisplay");
+    const gameOverPanel = document.getElementById("gameOver");
+    const gameOverMsg = document.getElementById("gameOverMessage");
+    const restartBtn = document.getElementById("restartBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
 
-  <!-- 数据表格 -->
-  <table id="scoreTable">
-    <thead>
-      <tr>
-        <th>序号</th>
-        <th>姓名</th>
-        <th>周一</th>
-        <th>周二</th>
-        <th>周三</th>
-        <th>周四</th>
-        <th>周五</th>
-        <th>总分</th>
-        <th>排名</th>
-      </tr>
-    </thead>
-    <tbody id="scoreBody"></tbody>
-  </table>
-</div>
+    // 调整画布大小
+    function resize() {
+      const maxWidth = window.innerWidth * 0.95;
+      const maxHeight = window.innerHeight * 0.9;
+      const aspect = 640 / 400;
+      let w = maxWidth;
+      let h = w / aspect;
+      if (h > maxHeight) h = maxHeight;
+      w = h * aspect;
 
-<script>
-// 检查 localStorage 是否可用
-function checkStorage() {
-  try {
-    const test = "__storage_test__";
-    localStorage.setItem(test, test);
-    localStorage.removeItem(test);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
+      canvas.width = 640;
+      canvas.height = 400;
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+    }
+    window.addEventListener("resize", resize);
+    resize();
 
-if (!checkStorage()) {
-  document.getElementById("storageWarning").classList.remove("hidden");
-  alert("❌ 本地存储不可用！\n请：\n1. 关闭无痕模式\n2. 不要双击打开文件\n3. 使用服务器打开（如 VS Code Live Server）");
-}
+    // 键盘控制
+    const keys = {};
+    document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+    document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-// 默认数据
-const defaultData = {
-  students: [],
-  settings: {
-    teacherPassword: "123456"
-  }
-};
+    // 游戏常量
+    const GRAVITY = 0.6, JUMP = -12, MOVE_ACCEL = 0.6, FRICTION = 0.8, MAX_SPEED = 5;
+    let worldOffset = 0, 
+        gameOver = false, 
+        coinsCollected = 0, 
+        animationId = null,
+        level = 1;
 
-// 初始化学生：张3 到 张45
-function initStudents() {
-  defaultData.students = [];
-  for (let i = 3; i <= 45; i++) {
-    defaultData.students.push({
-      id: i - 2,
-      name: `张${i}`,
-      scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 },
-      total: 0,
-      rank: 1
-    });
-  }
-}
+    let player, platforms, flag, coins, enemies;
 
-initStudents();
+    // 重启游戏
+    function restartGame() {
+      gameOver = false;  // ✅ 关键：重置游戏状态
+      level = 1;
+      coinsCollected = 0;
+      updateUI();
+      loadLevel(level);
+      gameOverPanel.style.display = "none";
+      if (animationId) cancelAnimationFrame(animationId);
+      animationId = requestAnimationFrame(loop);
+    }
 
-let appData = null;
-let isTeacher = false;
-let currentStudentName = null;
-let saveTimeout = null;
+    // 加载关卡
+    function loadLevel(lv) {
+      if (lv === 1) {
+        player = { x: 50, y: 0, w: 30, h: 50, vx: 0, vy: 0, onGround: false };
+        platforms = [
+          { x: 0, y: 350, w: 2000, h: 50 },
+          { x: 200, y: 300, w: 100, h: 20 },
+          { x: 400, y: 250, w: 100, h: 20 },
+          { x: 600, y: 200, w: 100, h: 20 },
+          { x: 800, y: 150, w: 100, h: 20 },
+        ];
+        flag = { x: 1000, y: 100, h: 250 };
+        coins = [
+          { x: 250, y: 260, collected: false },
+          { x: 450, y: 210, collected: false },
+          { x: 650, y: 160, collected: false },
+          { x: 850, y: 110, collected: false }
+        ];
+        enemies = [
+          { x: 500, y: 320, w: 30, h: 30, vx: 1.5, alive: true }
+        ];
+      } else if (lv === 2) {
+        player = { x: 100, y: 0, w: 30, h: 50, vx: 0, vy: 0, onGround: false };
 
-// ============== 加载数据 ==============
-function loadFromStorage() {
-  try {
-    const saved = localStorage.getItem("scoreAppData");
-    if (saved) {
-      const data = JSON.parse(saved);
-      if (data.students && Array.isArray(data.students)) {
-        appData = data;
-        console.log("✅ 成功加载数据，学生数：", appData.students.length);
-        return;
+        // 地面
+        platforms = [
+          { x: 0, y: 350, w: 5000, h: 50 }
+        ];
+
+        // 城墙主体
+        const wallY = 250;
+        platforms.push({ x: 800, y: wallY, w: 600, h: 100 }); // 墙高100
+
+        // 垛口（女墙）
+        for (let i = 0; i < 12; i++) {
+          const x = 800 + i * 50;
+          platforms.push({ x: x, y: wallY - 20, w: 30, h: 20 });
+        }
+
+        // 后续跳跃平台
+        platforms.push({ x: 1600, y: 300, w: 80, h: 20 });
+        platforms.push({ x: 1800, y: 250, w: 80, h: 20 });
+        platforms.push({ x: 2000, y: 200, w: 80, h: 20 });
+        platforms.push({ x: 2200, y: 150, w: 80, h: 20 });
+
+        flag = { x: 2400, y: 100, h: 250 };
+
+        coins = [
+          { x: 900, y: wallY - 30, collected: false },
+          { x: 1100, y: wallY - 30, collected: false },
+          { x: 1300, y: wallY - 30, collected: false },
+          { x: 1700, y: 260, collected: false },
+          { x: 1900, y: 210, collected: false },
+          { x: 2100, y: 160, collected: false },
+          { x: 2300, y: 110, collected: false }
+        ];
+
+        enemies = [
+          { x: 1000, y: 320, w: 30, h: 30, vx: 2, alive: true },
+          { x: 1500, y: 320, w: 30, h: 30, vx: 2.5, alive: true },
+          { x: 1900, y: 210, w: 30, h: 30, vx: 1.2, alive: true }
+        ];
       }
     }
-  } catch (e) {
-    console.error("❌ 加载失败", e);
-  }
-  appData = JSON.parse(JSON.stringify(defaultData));
-  console.log("🔄 使用默认数据");
-}
 
-// ============== 保存数据 ==============
-function saveToStorage() {
-  calculateRankings();
-  try {
-    localStorage.setItem("scoreAppData", JSON.stringify(appData));
-    console.log("✅ 数据已保存，学生数：", appData.students.length);
-    document.getElementById("saveStatus").textContent = "✅ 已自动保存";
-    setTimeout(() => {
-      const el = document.getElementById("saveStatus");
-      if (el && el.textContent === "✅ 已自动保存") {
-        el.textContent = "";
+    // 更新UI
+    function updateUI() {
+      uiCoin.textContent = coinsCollected;
+      levelDisplay.textContent = level;
+    }
+
+    // 游戏更新
+    function update() {
+      if (gameOver) return;
+
+      if (keys["a"] || keys["arrowleft"]) player.vx -= MOVE_ACCEL;
+      if (keys["d"] || keys["arrowright"]) player.vx += MOVE_ACCEL;
+      if ((keys["w"] || keys["arrowup"] || keys[" "]) && player.onGround) {
+        player.vy = JUMP;
+        player.onGround = false;
       }
-    }, 2000);
-  } catch (e) {
-    console.error("❌ 保存失败", e);
-    document.getElementById("saveStatus").textContent = "❌ 存储失败";
-    alert("💾 存储失败！请检查是否为无痕模式");
-  }
-}
 
-// ============== 自动保存（防抖） ==============
-function autoSave() {
-  if (saveTimeout) clearTimeout(saveTimeout);
-  document.getElementById("saveStatus").textContent = "🔄 保存中...";
-  saveTimeout = setTimeout(saveToStorage, 500);
-}
+      player.vx *= FRICTION;
+      if (player.vx > MAX_SPEED) player.vx = MAX_SPEED;
+      if (player.vx < -MAX_SPEED) player.vx = -MAX_SPEED;
+      player.vy += GRAVITY;
+      player.x += player.vx;
+      player.y += player.vy;
+      player.onGround = false;
 
-// ============== 计算总分和排名 ==============
-function calculateRankings() {
-  appData.students.forEach(s => {
-    s.total = (s.scores.mon || 0) + (s.scores.tue || 0) + (s.scores.wed || 0) + (s.scores.thu || 0) + (s.scores.fri || 0);
-  });
-  appData.students.sort((a, b) => (b.total || 0) - (a.total || 0));
-  appData.students.forEach((s, idx) => {
-    s.rank = idx + 1;
-  });
-}
+      // 碰撞检测
+      for (let p of platforms) {
+        if (player.x < p.x + p.w && player.x + player.w > p.x &&
+            player.y < p.y + p.h && player.y + player.h > p.y) {
+          if (player.vy >= 0 && player.y + player.h <= p.y + player.vy) {
+            player.y = p.y - player.h;
+            player.vy = 0;
+            player.onGround = true;
+          }
+        }
+      }
 
-// ============== 渲染表格 ==============
-function renderTable() {
-  const tbody = document.getElementById("scoreBody");
-  tbody.innerHTML = "";
+      worldOffset = Math.max(0, player.x - canvas.width / 2);
 
-  const studentsToShow = isTeacher ? appData.students : appData.students.filter(s => s.name === currentStudentName);
+      // 吃金币
+      for (let c of coins) {
+        if (!c.collected &&
+            player.x < c.x + 20 && player.x + player.w > c.x &&
+            player.y < c.y + 20 && player.y + player.h > c.y) {
+          c.collected = true;
+          coinsCollected++;
+          updateUI();
+        }
+      }
 
-  studentsToShow.forEach((s, index) => {
-    const tr = document.createElement("tr");
+      // 敌人
+      for (let e of enemies) {
+        if (!e.alive) continue;
+        e.x += e.vx;
+        if (e.x < 800 || e.x > 1350) e.vx *= -1;
+        if (e.x < 1400 || e.x > 2300) e.vx *= -1;
 
-    // 姓名单元格
-    const nameCell = isTeacher
-      ? `<td><input type="text" value="${s.name}" oninput="updateName(${index}, this.value)" style="width:60px;text-align:center;" /></td>`
-      : `<td>${s.name}</td>`;
+        if (player.x < e.x + e.w && player.x + player.w > e.x &&
+            player.y < e.y + e.h && player.y + player.h > e.y) {
+          if (player.vy > 0 && player.y + player.h - 10 < e.y) {
+            e.alive = false;
+            player.vy = JUMP / 2;
+          } else {
+            gameOver = true;
+            showGameOver("你被怪物打败！");
+          }
+        }
+      }
 
-    // 分数单元格
-    const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
-    const scoreCells = days.map(day => 
-      isTeacher
-        ? `<td><input type="number" value="${s.scores[day] || 0}" min="0" max="100" oninput="updateScore(${index}, '${day}', this.valueAsNumber)" style="width:50px;text-align:center;" /></td>`
-        : `<td>${s.scores[day] || 0}</td>`
-    ).join('');
+      // 通关
+      if (player.x + player.w > flag.x - 10 && player.x < flag.x + 10) {
+        if (level === 1) {
+          level = 2;
+          loadLevel(2);
+          updateUI();
+        } else {
+          gameOver = true;
+          showGameOver(`🎉 通关成功！金币: ${coinsCollected}`);
+        }
+      }
 
-    tr.innerHTML = `
-      <td>${s.id}</td>
-      ${nameCell}
-      ${scoreCells}
-      <td>${s.total || 0}</td>
-      <td>${s.rank || 1}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-// ============== 更新姓名 ==============
-function updateName(index, newName) {
-  if (!newName || !newName.trim()) return;
-  appData.students[index].name = newName.trim();
-  autoSave();
-}
-
-// ============== 更新分数 ==============
-function updateScore(index, day, value) {
-  if (value < 0) value = 0;
-  if (value > 100) value = 100;
-  appData.students[index].scores[day] = value;
-  autoSave();
-}
-
-// ============== 添加学生 ==============
-function addStudent() {
-  const name = prompt("请输入新学生姓名：");
-  if (!name || !name.trim()) {
-    alert("姓名不能为空");
-    return;
-  }
-  if (appData.students.some(s => s.name === name.trim())) {
-    alert("❌ 该姓名已存在！");
-    return;
-  }
-  const newId = Math.max(0, ...appData.students.map(s => s.id)) + 1;
-  appData.students.push({
-    id: newId,
-    name: name.trim(),
-    scores: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 },
-    total: 0,
-    rank: 1
-  });
-  autoSave();
-  renderTable();
-}
-
-// ============== 登录 ==============
-function login() {
-  loadFromStorage();
-
-  const role = document.querySelector('input[name="role"]:checked').value;
-  const pwd = document.getElementById("teacherPassword").value;
-  const name = document.getElementById("studentName").value.trim();
-  const msgEl = document.getElementById("loginMsg");
-  msgEl.textContent = "";
-
-  if (role === "teacher") {
-    if (pwd === appData.settings.teacherPassword) {
-      isTeacher = true;
-      currentStudentName = null;
-      showMainPage("教师");
-      document.getElementById("teacherControls").classList.remove("hidden");
-      document.getElementById("studentControls").classList.add("hidden");
-    } else {
-      msgEl.textContent = "❌ 密码错误！";
+      if (player.y > canvas.height) {
+        gameOver = true;
+        showGameOver("掉下悬崖了！");
+      }
     }
-  } else if (role === "student") {
-    if (appData.students.some(s => s.name === name)) {
-      isTeacher = false;
-      currentStudentName = name;
-      showMainPage(`学生（${name}）`);
-      document.getElementById("teacherControls").classList.add("hidden");
-      document.getElementById("studentControls").classList.remove("hidden");
-    } else {
-      msgEl.textContent = "❌ 未找到该学生";
+
+    // 坐标转换
+    function worldToScreen(x, y) {
+      return { x: x - worldOffset, y: y };
     }
-  }
-}
 
-// ============== 显示主页面 ==============
-function showMainPage(user) {
-  document.getElementById("loginPage").classList.add("hidden");
-  document.getElementById("mainPage").classList.remove("hidden");
-  document.getElementById("userDisplay").textContent = user;
-  renderTable();
-}
+    // 绘制
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#88ddee";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-// ============== 导出 ==============
-function exportData() {
-  loadFromStorage();
-  const dataStr = JSON.stringify(appData, null, 2);
-  const blob = new Blob([dataStr], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `score_data_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-}
+      // 绘制平台
+      ctx.fillStyle = "#654321";
+      for (let p of platforms) {
+        let s = worldToScreen(p.x, p.y);
+        ctx.fillRect(s.x, s.y, p.w, p.h);
+      }
 
-// ============== 导入 ==============
-async function importData() {
-  const file = document.getElementById("importFile").files[0];
-  if (!file) return alert("请选择文件");
+      // ===== 第二关：城墙与门洞（底部完全贴地）=====
+      if (level === 2) {
+        const doorX = 1100;           // 门中心
+        const doorWidth = 80;         // 门宽
+        const archRadius = 40;        // 拱半径
+        const doorHeight = 60;        // 门洞高
 
-  try {
-    const text = await file.text();
-    const imported = JSON.parse(text);
-    if (imported.students && Array.isArray(imported.students)) {
-      appData = imported;
-      saveToStorage();
-      renderTable();
-      alert(`✅ 导入成功，共 ${appData.students.length} 名学生`);
-    } else {
-      alert("❌ 数据格式错误");
+        const screenX = worldToScreen(doorX, 350).x;
+        const doorBottomY = 350;      // 地面
+        const doorTopY = doorBottomY - doorHeight +50; // 矩形顶部
+
+        ctx.save();
+        // 裁剪区域
+        ctx.beginPath();
+        ctx.rect(
+          screenX - doorWidth / 2,
+          doorTopY - archRadius,  // 拱顶
+          doorWidth,
+          doorHeight + archRadius
+        );
+        ctx.clip();
+
+        // 挖洞
+        ctx.globalCompositeOperation = "destination-out";
+
+        // 半圆拱（从 doorTopY 向上画半圆）
+        ctx.beginPath();
+        ctx.arc(screenX, doorTopY, archRadius, 0, Math.PI, true);
+        ctx.fill();
+
+        // 矩形门洞（从 doorTopY 到地面）
+        ctx.fillRect(screenX - doorWidth / 2, doorTopY, doorWidth, doorHeight);
+
+        ctx.globalCompositeOperation = "source-over";
+        ctx.restore();
+
+        // 绘制“初二甲班”白色文字
+        const signX = worldToScreen(1000, 230).x;
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 24px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("初二甲班", signX, 210);
+      }
+
+      // 旗杆
+      let base = worldToScreen(flag.x, flag.y);
+      ctx.fillStyle = "#444";
+      ctx.fillRect(base.x - 3, base.y, 6, flag.h);
+      ctx.fillStyle = "red";
+      ctx.fillRect(base.x + 3, base.y, 40, 20);
+
+      // 金币
+      for (let c of coins) {
+        if (!c.collected) {
+          let pos = worldToScreen(c.x, c.y);
+          ctx.fillStyle = "gold";
+          ctx.beginPath();
+          ctx.arc(pos.x + 10, pos.y + 10, 10, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 敌人
+      for (let e of enemies) {
+        if (!e.alive) continue;
+        let pos = worldToScreen(e.x, e.y);
+        ctx.fillStyle = "brown";
+        ctx.fillRect(pos.x, pos.y, e.w, e.h);
+        ctx.fillStyle = "#fff";
+        ctx.font = "12px sans-serif";
+        ctx.fillText("怪", pos.x + 8, pos.y + 18);
+      }
+
+      // 玩家
+      let pos = worldToScreen(player.x, player.y);
+      ctx.fillStyle = "#ff99cc";
+      ctx.fillRect(pos.x, pos.y, player.w, player.h);
+      ctx.fillStyle = "#fff";
+      ctx.font = "12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("没", pos.x + player.w / 2, pos.y + 18);
+      ctx.fillText("移", pos.x + player.w / 2, pos.y + 36);
     }
-  } catch (e) {
-    alert("❌ 导入失败：" + e.message);
-  }
-  document.getElementById("importFile").value = "";
-}
 
-// ============== 退出 ==============
-function logout() {
-  if (confirm("确定要退出吗？")) {
-    document.getElementById("mainPage").classList.add("hidden");
-    document.getElementById("loginPage").classList.remove("hidden");
-    document.getElementById("teacherPassword").value = "";
-    document.getElementById("studentName").value = "";
-    isTeacher = false;
-    currentStudentName = null;
-    if (saveTimeout) clearTimeout(saveTimeout);
-  }
-}
-</script>
+    // 显示结束面板
+    function showGameOver(msg) {
+      gameOverMsg.textContent = msg;
+      gameOverPanel.style.display = "block";
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    }
+
+    // 主循环
+    function loop() {
+      update();
+      draw();
+      animationId = requestAnimationFrame(loop);
+    }
+
+    // 按钮事件
+    restartBtn.onclick = restartGame;
+    fullscreenBtn.onclick = () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+        fullscreenBtn.textContent = "⛶ 全屏";
+      } else {
+        document.documentElement.requestFullscreen();
+        fullscreenBtn.textContent = "⛶ 退出全屏";
+      }
+    };
+
+    // 启动游戏
+    restartGame();
+  </script>
 </body>
 </html>
